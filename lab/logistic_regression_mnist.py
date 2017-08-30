@@ -27,20 +27,17 @@ mnist = input_data.read_data_sets('./data/mnist', one_hot=True)
 # therefore, each image is represented with a 1x784 tensor
 # there are 10 classes for each image, corresponding to digits 0 - 9.
 # Features are of the type float, and labels are of the type int
-with tf.name_scope('input'):
-    x = tf.placeholder(tf.float32, shape=(None, 784), name='image')
-    y = tf.placeholder(tf.int32, shape=(None, 10), name='label')
+x = tf.placeholder(tf.float32, shape=[None, 784], name='image')
+y = tf.placeholder(tf.int32, shape=[None, 10], name='label')
 
 # Step 3: create weights and bias
 # weights and biases are initialized to 0
 # shape of w depends on the dimension of X and Y so that Y = X * w + b
 # shape of b depends on Y
-with tf.variable_scope('logistic'):
-    w = tf.get_variable(
-        'weight',
-        shape=(784, 10),
-        initializer=tf.truncated_normal_initializer())
-    b = tf.get_variable('bias', shape=(10), initializer=tf.zeros_initializer())
+
+w = tf.get_variable(
+    'weight', shape=[784, 10], initializer=tf.truncated_normal_initializer())
+b = tf.get_variable('bias', shape=[10], initializer=tf.zeros_initializer())
 
 # Step 4: build model
 # the model that returns the logits.
@@ -54,11 +51,17 @@ logits = tf.matmul(x, w) + b
 entropy = tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=logits)
 # then use tf.reduce_mean to get the mean loss of the batch
 loss = tf.reduce_mean(entropy, axis=0)
+# test model
+preds = tf.nn.softmax(logits)
+correct_preds = tf.equal(tf.argmax(preds, 1), tf.argmax(y, 1))
+accuracy = tf.reduce_sum(tf.cast(correct_preds, tf.float32), axis=0)
+
 # Step 6: define training op
 # using gradient descent to minimize loss
 optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)
 
 with tf.Session() as sess:
+    writer = tf.summary.FileWriter('./logistic_log', sess.graph)
     start_time = time.time()
     sess.run(tf.global_variables_initializer())
     n_batches = int(mnist.train.num_examples / batch_size)
@@ -77,10 +80,6 @@ with tf.Session() as sess:
     print('Optimization Finished!')  # should be around 0.35 after 25 epochs
 
     # test the model
-    preds = tf.nn.softmax(logits)
-    correct_preds = tf.equal(tf.argmax(preds, 1), tf.argmax(y, 1))
-    accuracy = tf.reduce_sum(tf.cast(correct_preds, tf.float32), axis=0)
-
     n_batches = int(mnist.test.num_examples / batch_size)
     total_correct_preds = 0
 
